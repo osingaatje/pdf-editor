@@ -1,6 +1,8 @@
 from PyPDF2 import PdfReader, PdfWriter
 from PyPDF2.generic import DecodedStreamObject, EncodedStreamObject, NameObject
 
+# for detecting encoding
+import chardet
 
 def replace_text(content :str, replacements = dict()):
     lines = content.splitlines()
@@ -33,11 +35,17 @@ def replace_text(content :str, replacements = dict()):
 
 def process_data(object :DecodedStreamObject | EncodedStreamObject, replacements):
     data = object.get_data()
-    decoded_data = data.decode('utf-8')
+    
+    charset_information = chardet.detect(data)
+    if 'encoding' not in charset_information:
+        raise RuntimeError("Could not get encoding of the PDF data :((")
+    encoding = charset_information['encoding']
+
+    decoded_data = data.decode(encoding)
 
     replaced_data = replace_text(decoded_data, replacements)
 
-    encoded_data = replaced_data.encode('utf-8')
+    encoded_data = replaced_data.encode(encoding)
     if object.decoded_self is not None:
         object.decoded_self.set_data(encoded_data)
     else:
