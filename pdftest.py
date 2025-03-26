@@ -31,7 +31,7 @@ def replace_text(content :str, replacements = dict()):
     return "\n".join(result)
 
 
-def process_data(object :EncodedStreamObject, replacements):
+def process_data(object :DecodedStreamObject | EncodedStreamObject, replacements):
     data = object.get_data()
     decoded_data = data.decode('utf-8')
 
@@ -41,11 +41,15 @@ def process_data(object :EncodedStreamObject, replacements):
     if object.decoded_self is not None:
         object.decoded_self.set_data(encoded_data)
     else:
-        object.setData(encoded_data)
+        object.set_data(encoded_data)
 
 FILE_IN_PATH = "files/2024-03-26_Sponsorpakketten_JFO_tickets.pdf"
 FILE_OUT_PATH = "edit/2024-03-26_Sponsorpakketten_JFO_tickets-EDITED.pdf"
-REPLACEMENTS :dict[str, str] = {"#2025_000111222333": "TEST_CODE"}
+
+
+# Replace strings with other strings
+# NOTE: MAKE SURE THE PDF INCLUDES ALL FONTS, SO WE CAN EDIT THE TEXT LATER WITHOUT GETTING WEIRD FONT ISSUES!!!
+REPLACEMENTS :dict[str, str] = {"#2025_000111222333": "#2025_1234567890123"}
 
 def replace_strings_in_pdf(file_in_path :str, file_out_path :str, replacements :dict[str,str]):
     """
@@ -65,11 +69,12 @@ def replace_strings_in_pdf(file_in_path :str, file_out_path :str, replacements :
         elif len(contents) > 0:
             for obj in contents:
                 if isinstance(obj, DecodedStreamObject) or isinstance(obj, EncodedStreamObject):
-                    streamObj = obj.getObject()
+                    streamObj = obj.get_object()
                     process_data(streamObj, replacements)
 
         # Force content replacement
-        page[NameObject("/Contents")] = contents.decoded_self
+        # page[NameObject("/Contents")] = contents.decoded_self
+        page[NameObject("/Contents")] = contents
         writer.add_page(page)
 
     with open(file_out_path, 'wb') as out_file:
